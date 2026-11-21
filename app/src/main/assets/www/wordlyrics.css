@@ -1,0 +1,61 @@
+/* ════════════════════════════════════════════════════════════════════
+   WORD-SYNC LYRICS (Apple Music 스타일) — wordlyrics.js 와 함께 사용
+   · 비활성 줄: 일반 텍스트 (기존 .np-lyric-line / .np-fs-lyric-line / .np-ls-lyric-line 색상 그대로)
+   · 활성(.ws-on) 줄: 단어별 그라디언트 스윕 + 들어올림 + (긴 단어) 글로우
+   · 변형/그라디언트는 활성 줄에서만 적용 → 스크롤/레이어 비용 없음
+════════════════════════════════════════════════════════════════════ */
+.ws-wrap { display: inline; }
+.ws-g    { display: inline; white-space: nowrap; }
+.ws-w    { display: inline; }
+.ws-c    { display: inline-block; }
+
+/* 활성 줄의 줄 단위 drop-shadow 는 단어가 바뀔 때마다 줄 전체를 다시 래스터라이즈하므로 끄고,
+   대신 오래 끄는 단어에만 글로우를 준다. */
+.ws-line.ws-on { filter: none !important; }
+
+.ws-line.ws-on .ws-c {
+    --ws-hl:  rgba(255, 255, 255, 0.98);   /* 이미 불린 부분 */
+    --ws-dim: rgba(255, 255, 255, 0.26);   /* 아직 안 불린 부분 */
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    /* 글자 1.5개 폭의 넓은 경계가 글자 안쪽을 따라 왼→오로 흐른다 (--p: 0→1, 글자마다 개별 값) */
+    background-image: linear-gradient(90deg,
+        var(--ws-hl)  calc(var(--p, 0) * 250% - 150%),
+        var(--ws-dim) calc(var(--p, 0) * 250%));
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+            background-clip: text;
+    /* 한 글자씩, 하이라이트보다 살짝 늦게 조금만 떠오른다. 원근(perspective)+Z 이동으로 위로 뜨는 동시에
+       화면 쪽으로 다가오는 입체감 (--l: 0→1, 글자마다 개별 값) */
+    transform: perspective(420px) translate3d(0, calc(var(--l, 0) * -0.04em), calc(var(--l, 0) * 3px))
+        scale(calc(1 + var(--w, 0) * 0.05));   /* 웨이브: 글자마다 개별 값(--w: 0→1→0), 최대 +5% 로 은은하게 */
+    transform-origin: 50% 85%;
+}
+
+/* 줄이 끝나 비활성이 되면 들어올려졌던 단어가 부드럽게 내려온다 */
+.ws-line:not(.ws-on) .ws-c { transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* 오래 끄는 단어: 불릴 때 빛나는 글로우 (--g: 0→1→0) */
+.ws-line.ws-on .ws-gl.ws-gon {
+    filter: drop-shadow(0 0 calc(var(--g, 0) * 0.5em) rgba(255, 255, 255, calc(var(--g, 0) * 0.8)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ws-line.ws-on .ws-c { transform: none; }
+    .ws-line:not(.ws-on) .ws-c { transition: none; }
+}
+
+/* ── 가사 출처 표시(디버그): 가사 맨 끝에 작게 ── */
+.ly-src {
+    font-size: 10px;
+    line-height: 1.45;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.30);
+    padding: 22px 20px 36px;
+    word-break: break-all;
+    white-space: pre-line;      /* 출처/점수/탈락 후보를 줄바꿈으로 구분 */
+    pointer-events: none;
+}
+.ly-src:empty { display: none; }
